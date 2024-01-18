@@ -14,3 +14,9 @@ drop_db:
 
 open_db:
 	@docker exec -it ${DB_DOCKER_CONTAINER} psql -U ${DB_DOCKER_USER}
+
+migrateup:
+	migrate -path db/migration -database "postgresql://${DB_DOCKER_USER}:${DB_DOCKER_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose up
+
+migratedown:
+	migrate -path db/migration -database "postgresql://${DB_DOCKER_USER}:${DB_DOCKER_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose down
