@@ -23,3 +23,6 @@ migratedown:
 
 migrateforce:
 	migrate -path database/migration -database "postgresql://${DB_DOCKER_USER}:${DB_DOCKER_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" force 1
+
+run:
+	@go build -o api main.go && ./api
