@@ -3,5 +3,6 @@ create table users (
   "username" varchar not null,
   "email" text UNIQUE not null,
   "password" text not null,
-  "created_at" timestamptz not null default (now())
+  "created_at" timestamptz not null default (now()),
+  "updated_at" timestamptz not null default (now())
 );
