@@ -3,12 +3,13 @@ package aplication
 import (
 	"net/http"
 
+	"github.com/georgifotev1/go-api/handlers"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
 
-func newRouter() *chi.Mux {
+func (a *App) newRouter() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
@@ -24,5 +25,17 @@ func newRouter() *chi.Mux {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	return r
+	r.Route("/auth", a.loadAuthRoutes)
+
+	a.router = r
+}
+
+func (a *App) loadAuthRoutes(r chi.Router) {
+	authHandler := &handlers.User{
+		Storage: a.db,
+	}
+
+	r.Post("/register", authHandler.Register)
+	r.Post("/signin", authHandler.SignIn)
+	r.Get("/signout", authHandler.SignOut)
 }

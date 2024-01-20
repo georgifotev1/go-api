@@ -15,10 +15,12 @@ type App struct {
 }
 
 func New(conn *sql.DB) *App {
-	return &App{
-		db:     sqlc.New(conn),
-		router: newRouter(),
+	app := &App{
+		db: sqlc.New(conn),
 	}
+	app.newRouter()
+
+	return app
 }
 
 func (a *App) Start() error {
