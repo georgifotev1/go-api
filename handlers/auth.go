@@ -11,7 +11,15 @@ type User struct {
 }
 
 func (u *User) Register(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Register"))
+	type params struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	p := params{}
+	if err := ReadJSON(r.Body, &p); err != nil {
+		WriteError(w, http.StatusBadRequest, "bad request")
+	}
 }
 
 func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
