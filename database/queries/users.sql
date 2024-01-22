@@ -1,7 +1,7 @@
 -- name: CreateUser :one
 insert into users (username,email,password)
 values ($1,$2,$3)
-returning id,username,email,created_at;
+returning id,username,email,created_at,updated_at;
 
 -- name: GetUserById :one
 select * from users

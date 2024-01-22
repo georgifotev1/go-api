@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 insert into users (username,email,password)
 values ($1,$2,$3)
-returning id,username,email,created_at
+returning id,username,email,created_at,updated_at
 `
 
 type CreateUserParams struct {
@@ -27,6 +27,7 @@ type CreateUserRow struct {
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -37,6 +38,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.Username,
 		&i.Email,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
