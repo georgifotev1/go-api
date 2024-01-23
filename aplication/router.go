@@ -25,12 +25,12 @@ func (a *App) newRouter() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	r.Route("/auth", a.loadAuthRoutes)
+	r.Route("/auth", a.loadUsersRoutes)
 
 	a.router = r
 }
 
-func (a *App) loadAuthRoutes(r chi.Router) {
+func (a *App) loadUsersRoutes(r chi.Router) {
 	authHandler := &handlers.User{
 		Storage: a.db,
 	}

@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
-	"net/mail"
-	"regexp"
 
 	"github.com/georgifotev1/go-api/database/sqlc"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,19 +20,19 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := parameters{}
-	if err := ReadJSON(r.Body, &params); err != nil {
-		WriteError(w, http.StatusBadRequest, "bad request")
+	if err := readJSON(r.Body, &params); err != nil {
+		respondWithError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 
 	if !isEmail(params.Email) || !isValid(params.Username) || !isValid(params.Password) {
-		WriteError(w, http.StatusBadRequest, "invalid input")
+		respondWithError(w, http.StatusBadRequest, "invalid input")
 		return
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -43,24 +41,27 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		Email:    params.Email,
 		Password: string(hashedPass),
 	})
-
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		if pqErr, ok := err.(*pq.Error); ok {
+			msg := formatUniqueConstrainErr(pqErr)
+			respondWithError(w, http.StatusForbidden, msg)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	tokenString, err := createToken(user.Username)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response := map[string]interface{}{
-		"user":  user,
-		"token": tokenString,
+	err = respondWithJSON(w, http.StatusOK, formatUser(user, tokenString))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "server error")
+		return
 	}
-
-	log.Fatal(WriteJSON(w, http.StatusOK, response))
 }
 
 func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -69,14 +70,4 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 
 func (u *User) SignOut(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Logout"))
-}
-
-func isEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
-}
-
-func isValid(input string) bool {
-	r := regexp.MustCompile("^[a-zA-Z0-9]{3,}$")
-	return r.MatchString(input)
 }
