@@ -7,13 +7,12 @@ package sqlc
 
 import (
 	"context"
-	"time"
 )
 
 const createUser = `-- name: CreateUser :one
 insert into users (username,email,password)
 values ($1,$2,$3)
-returning id,username,email,created_at,updated_at
+returning id, username, email, password, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -22,35 +21,28 @@ type CreateUserParams struct {
 	Password string `json:"password"`
 }
 
-type CreateUserRow struct {
-	ID        int64     `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Email, arg.Password)
-	var i CreateUserRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.Password,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getUserById = `-- name: GetUserById :one
+const getUserByEmail = `-- name: GetUserByEmail :one
 select id, username, email, password, created_at, updated_at from users
-where id = $1
+where email = $1
 limit 1
 `
 
-func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserById, id)
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,

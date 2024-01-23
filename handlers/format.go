@@ -16,7 +16,7 @@ type fUser struct {
 	Token     string    `json:"token"`
 }
 
-func formatUser(user sqlc.CreateUserRow, token string) fUser {
+func formatUser(user sqlc.User, token string) fUser {
 	return fUser{
 		ID:        user.ID,
 		Username:  user.Username,

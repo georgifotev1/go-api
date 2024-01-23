@@ -1,11 +1,11 @@
 -- name: CreateUser :one
 insert into users (username,email,password)
 values ($1,$2,$3)
-returning id,username,email,created_at,updated_at;
+returning *;
 
--- name: GetUserById :one
+-- name: GetUserByEmail :one
 select * from users
-where id = $1
+where email = $1
 limit 1;
 
 -- name: GetUsers :many
