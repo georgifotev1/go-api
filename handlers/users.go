@@ -8,6 +8,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	ErrInternalServer = "internal serve error"
+	ErrInvalidJSON    = "bad request: invalid JSON"
+	ErrInvalidInput   = "bad request: invalid input"
+)
+
 type User struct {
 	Storage *sqlc.Queries
 }
@@ -21,18 +27,18 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 
 	params := parameters{}
 	if err := readJSON(r.Body, &params); err != nil {
-		respondWithError(w, http.StatusBadRequest, "bad request")
+		respondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
 		return
 	}
 
 	if !isEmail(params.Email) || !isValid(params.Username) || !isValid(params.Password) {
-		respondWithError(w, http.StatusBadRequest, "invalid input")
+		respondWithError(w, http.StatusBadRequest, ErrInvalidInput)
 		return
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
@@ -47,19 +53,19 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusForbidden, msg)
 			return
 		}
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
 	tokenString, err := createToken(user.Username)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
 	err = respondWithJSON(w, http.StatusOK, formatUser(user, tokenString))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "server error")
+		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 }
