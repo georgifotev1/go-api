@@ -13,6 +13,7 @@ const (
 	ErrInvalidJSON    = "bad request: invalid JSON"
 	ErrInvalidInput   = "bad request: invalid input"
 	ErrWrongPassword  = "bad request: wrong password"
+	ErrInvalidToken   = "invalid token"
 )
 
 type User struct {
@@ -27,19 +28,19 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := parameters{}
-	if err := readJSON(r.Body, &params); err != nil {
-		respondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
+	if err := ReadJSON(r.Body, &params); err != nil {
+		RespondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
 		return
 	}
 
 	if !isEmail(params.Email) || !isValid(params.Username) || !isValid(params.Password) {
-		respondWithError(w, http.StatusBadRequest, ErrInvalidInput)
+		RespondWithError(w, http.StatusBadRequest, ErrInvalidInput)
 		return
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
@@ -51,22 +52,22 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			msg := formatUniqueConstrainErr(pqErr)
-			respondWithError(w, http.StatusForbidden, msg)
+			RespondWithError(w, http.StatusForbidden, msg)
 			return
 		}
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
 	tokenString, err := createToken(user.Username)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
-	err = respondWithJSON(w, http.StatusCreated, formatUser(user, tokenString))
+	err = RespondWithJSON(w, http.StatusCreated, formatUser(user, tokenString))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 }
@@ -78,13 +79,13 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := parameters{}
-	if err := readJSON(r.Body, &params); err != nil {
-		respondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
+	if err := ReadJSON(r.Body, &params); err != nil {
+		RespondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
 		return
 	}
 
 	if !isEmail(params.Email) || !isValid(params.Password) {
-		respondWithError(w, http.StatusBadRequest, ErrInvalidInput)
+		RespondWithError(w, http.StatusBadRequest, ErrInvalidInput)
 		return
 	}
 
@@ -92,32 +93,34 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if _, ok := err.(*pq.Error); ok {
 			//TODO fix error
-			respondWithError(w, http.StatusForbidden, ErrInvalidInput)
+			RespondWithError(w, http.StatusForbidden, ErrInvalidInput)
 			return
 		}
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password))
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, ErrWrongPassword)
+		RespondWithError(w, http.StatusBadRequest, ErrWrongPassword)
 		return
 	}
 
 	tokenString, err := createToken(user.Username)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 
-	err = respondWithJSON(w, http.StatusOK, formatUser(user, tokenString))
+	err = RespondWithJSON(w, http.StatusOK, formatUser(user, tokenString))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
 	}
 }
 
 func (u *User) SignOut(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Logout"))
+	tokenString := r.Header.Get("Authorization")
+	blacklistToken(tokenString)
+	w.WriteHeader(http.StatusOK)
 }

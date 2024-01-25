@@ -6,20 +6,20 @@ import (
 	"net/http"
 )
 
-func readJSON(r io.Reader, i interface{}) error {
+func ReadJSON(r io.Reader, i interface{}) error {
 	return json.NewDecoder(r).Decode(i)
 }
 
-func respondWithJSON(w http.ResponseWriter, status int, i interface{}) error {
+func RespondWithJSON(w http.ResponseWriter, status int, i interface{}) error {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(i)
 }
 
-func respondWithError(w http.ResponseWriter, status int, msg string) {
+func RespondWithError(w http.ResponseWriter, status int, msg string) {
 	type errorMsg struct {
 		Error string `json:"error"`
 	}
 
-	respondWithJSON(w, status, errorMsg{Error: msg})
+	RespondWithJSON(w, status, errorMsg{Error: msg})
 }

@@ -37,5 +37,5 @@ func (a *App) loadUsersRoutes(r chi.Router) {
 
 	r.Post("/register", authHandler.Register)
 	r.Post("/signin", authHandler.SignIn)
-	r.Get("/signout", authHandler.SignOut)
+	r.Get("/signout", a.authMiddleware(authHandler.SignOut))
 }
