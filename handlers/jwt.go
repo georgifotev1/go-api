@@ -13,34 +13,29 @@ var (
 	blaclistedTokens = make(map[string]bool)
 )
 
-func createToken(username string) (string, error) {
+func createToken(id int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"username": username,
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
+			"id":  id,
+			"exp": time.Now().Add(time.Hour * 24).Unix(),
 		})
 
 	return token.SignedString(secretKey)
 }
 
-func VerifyToken(tokenString string) error {
+func VerifyToken(tokenString string) (*jwt.Token, error) {
 	if blaclistedTokens[tokenString] {
-		return fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
 		return secretKey, nil
 	})
-
-	if err != nil {
-		return err
-	}
-
-	if !token.Valid {
-		return fmt.Errorf("invalid token")
-	}
-
-	return nil
 }
 
 func blacklistToken(tokenString string) {

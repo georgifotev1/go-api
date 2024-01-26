@@ -8,14 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	ErrInternalServer = "internal serve error"
-	ErrInvalidJSON    = "bad request: invalid JSON"
-	ErrInvalidInput   = "bad request: invalid input"
-	ErrWrongPassword  = "bad request: wrong password"
-	ErrInvalidToken   = "invalid token"
-)
-
 type User struct {
 	Storage *sqlc.Queries
 }
@@ -59,7 +51,7 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := createToken(user.Username)
+	tokenString, err := createToken(user.ID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
@@ -106,7 +98,7 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := createToken(user.Username)
+	tokenString, err := createToken(user.ID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
 		return
