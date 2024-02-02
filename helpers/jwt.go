@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	secretKey        = []byte(os.Getenv("JWT_KEY"))
-	blaclistedTokens = make(map[string]bool)
+	secretKey   = []byte(os.Getenv("JWT_KEY"))
+	validTokens = make(map[string]bool)
 )
 
 func CreateToken(id int64) (string, error) {
@@ -21,11 +21,18 @@ func CreateToken(id int64) (string, error) {
 			"exp": time.Now().Add(time.Hour * 24).Unix(),
 		})
 
-	return token.SignedString(secretKey)
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	validTokens[tokenString] = true
+
+	return tokenString, nil
 }
 
 func VerifyToken(tokenString string) (*jwt.Token, error) {
-	if blaclistedTokens[tokenString] {
+	if !validTokens[tokenString] {
 		return nil, fmt.Errorf(messages.ErrAuthenticationFailed)
 	}
 
@@ -39,5 +46,5 @@ func VerifyToken(tokenString string) (*jwt.Token, error) {
 }
 
 func BlacklistToken(tokenString string) {
-	blaclistedTokens[tokenString] = true
+	delete(validTokens, tokenString)
 }
