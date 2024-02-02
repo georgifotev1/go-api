@@ -10,7 +10,7 @@ func isEmail(email string) bool {
 	return err == nil
 }
 
-func isValid(input string) bool {
+func isAlphanumeric(input string) bool {
 	r := regexp.MustCompile("^[a-zA-Z0-9]{3,}$")
 	return r.MatchString(input)
 }

@@ -1,9 +1,10 @@
-package handlers
+package helpers
 
 import (
 	"time"
 
 	"github.com/georgifotev1/go-api/database/sqlc"
+	"github.com/georgifotev1/go-api/messages"
 	"github.com/lib/pq"
 )
 
@@ -16,7 +17,7 @@ type fUser struct {
 	Token     string    `json:"token"`
 }
 
-func formatUser(user sqlc.User, token string) fUser {
+func FormatUser(user sqlc.User, token string) fUser {
 	return fUser{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -27,16 +28,16 @@ func formatUser(user sqlc.User, token string) fUser {
 	}
 }
 
-func formatUniqueConstrainErr(err *pq.Error) string {
+func FormatUniqueConstrainErr(err *pq.Error) string {
 	if err.Code == "23505" {
 		switch err.Constraint {
 		case "users_username_key":
-			return "username is already taken"
+			return messages.ErrBadUsername
 		case "users_email_key":
-			return "email is already taken"
+			return messages.ErrBadEmail
 		default:
-			return "unique constraint violation"
+			return messages.ErrUniqueConstraint
 		}
 	}
-	return "failed to create user"
+	return messages.ErrFailedRegistration
 }

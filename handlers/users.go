@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/georgifotev1/go-api/database/sqlc"
+	"github.com/georgifotev1/go-api/helpers"
+	"github.com/georgifotev1/go-api/messages"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,19 +22,19 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := parameters{}
-	if err := ReadJSON(r.Body, &params); err != nil {
-		RespondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
+	if err := helpers.ReadJSON(r.Body, &params); err != nil {
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidJSON)
 		return
 	}
 
-	if !isEmail(params.Email) || !isValid(params.Username) || !isValid(params.Password) {
-		RespondWithError(w, http.StatusBadRequest, ErrInvalidInput)
+	if !isEmail(params.Email) || !isAlphanumeric(params.Username) || !isAlphanumeric(params.Password) {
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidInput)
 		return
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 
@@ -43,23 +45,23 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
-			msg := formatUniqueConstrainErr(pqErr)
-			RespondWithError(w, http.StatusForbidden, msg)
+			msg := helpers.FormatUniqueConstrainErr(pqErr)
+			helpers.WriteError(w, http.StatusForbidden, msg)
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 
-	tokenString, err := createToken(user.ID)
+	tokenString, err := helpers.CreateToken(user.ID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 
-	err = RespondWithJSON(w, http.StatusCreated, formatUser(user, tokenString))
+	err = helpers.WriteJSON(w, http.StatusCreated, helpers.FormatUser(user, tokenString))
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 }
@@ -71,13 +73,13 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := parameters{}
-	if err := ReadJSON(r.Body, &params); err != nil {
-		RespondWithError(w, http.StatusBadRequest, ErrInvalidJSON)
+	if err := helpers.ReadJSON(r.Body, &params); err != nil {
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidJSON)
 		return
 	}
 
-	if !isEmail(params.Email) || !isValid(params.Password) {
-		RespondWithError(w, http.StatusBadRequest, ErrInvalidInput)
+	if !isEmail(params.Email) || !isAlphanumeric(params.Password) {
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidInput)
 		return
 	}
 
@@ -85,34 +87,34 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if _, ok := err.(*pq.Error); ok {
 			//TODO fix error
-			RespondWithError(w, http.StatusForbidden, ErrInvalidInput)
+			helpers.WriteError(w, http.StatusForbidden, messages.ErrInvalidInput)
 			return
 		}
-		RespondWithError(w, http.StatusBadRequest, err.Error())
+		helpers.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password))
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, ErrWrongPassword)
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrWrongPassword)
 		return
 	}
 
-	tokenString, err := createToken(user.ID)
+	tokenString, err := helpers.CreateToken(user.ID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 
-	err = RespondWithJSON(w, http.StatusOK, formatUser(user, tokenString))
+	err = helpers.WriteJSON(w, http.StatusOK, helpers.FormatUser(user, tokenString))
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, ErrInternalServer)
+		helpers.WriteError(w, http.StatusInternalServerError, messages.ErrInternalServer)
 		return
 	}
 }
 
 func (u *User) SignOut(w http.ResponseWriter, r *http.Request) {
 	tokenString := r.Header.Get("Authorization")
-	blacklistToken(tokenString)
+	helpers.BlacklistToken(tokenString)
 	w.WriteHeader(http.StatusOK)
 }

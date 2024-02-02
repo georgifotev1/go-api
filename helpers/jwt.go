@@ -1,10 +1,11 @@
-package handlers
+package helpers
 
 import (
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/georgifotev1/go-api/messages"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -13,7 +14,7 @@ var (
 	blaclistedTokens = make(map[string]bool)
 )
 
-func createToken(id int64) (string, error) {
+func CreateToken(id int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"id":  id,
@@ -25,18 +26,18 @@ func createToken(id int64) (string, error) {
 
 func VerifyToken(tokenString string) (*jwt.Token, error) {
 	if blaclistedTokens[tokenString] {
-		return nil, fmt.Errorf("invalid token")
+		return nil, fmt.Errorf(messages.ErrAuthenticationFailed)
 	}
 
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf(messages.ErrAuthenticationFailed)
 		}
 
 		return secretKey, nil
 	})
 }
 
-func blacklistToken(tokenString string) {
+func BlacklistToken(tokenString string) {
 	blaclistedTokens[tokenString] = true
 }
