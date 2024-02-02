@@ -85,18 +85,13 @@ func (u *User) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.Storage.GetUserByEmail(r.Context(), params.Email)
 	if err != nil {
-		if _, ok := err.(*pq.Error); ok {
-			//TODO fix error
-			helpers.WriteError(w, http.StatusForbidden, messages.ErrInvalidInput)
-			return
-		}
-		helpers.WriteError(w, http.StatusBadRequest, err.Error())
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidInput)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password))
 	if err != nil {
-		helpers.WriteError(w, http.StatusBadRequest, messages.ErrWrongPassword)
+		helpers.WriteError(w, http.StatusBadRequest, messages.ErrInvalidInput)
 		return
 	}
 

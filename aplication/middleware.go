@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func (a *App) authMiddleware(handlerFunc http.HandlerFunc) http.HandlerFunc {
+func (a *App) isUser(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
@@ -45,6 +45,19 @@ func (a *App) authMiddleware(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		claims := token.Claims.(jwt.MapClaims)
 		if user.ID != int64(claims["id"].(float64)) {
 			helpers.WriteError(w, http.StatusUnauthorized, messages.ErrAuthenticationFailed)
+			return
+		}
+
+		handlerFunc(w, r)
+	}
+}
+
+func (a *App) isGuest(handlerFunc http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authorization")
+		if tokenString != "" {
+			helpers.WriteError(w, http.StatusBadRequest, messages.ErrSessionExists)
+			return
 		}
 
 		handlerFunc(w, r)

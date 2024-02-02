@@ -35,7 +35,7 @@ func (a *App) loadUsersRoutes(r chi.Router) {
 		Storage: a.db,
 	}
 
-	r.Post("/register", authHandler.Register)
-	r.Post("/signin", authHandler.SignIn)
-	r.Get("/signout/{userId}", a.authMiddleware(authHandler.SignOut))
+	r.Post("/register", a.isGuest(authHandler.Register))
+	r.Post("/signin", a.isGuest(authHandler.SignIn))
+	r.Get("/signout/{userId}", a.isUser(authHandler.SignOut))
 }
